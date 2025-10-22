@@ -4,770 +4,701 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Programador de Horarios</title>
-    <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Fuente Inter de Tailwind */
-        body {
-            font-family: 'Inter', sans-serif;
+        body { font-family: 'Inter', sans-serif; }
+        .tab-button.active {
+            border-bottom-color: #3b82f6; /* blue-500 */
+            color: #3b82f6;
         }
-        /* Estilo para los inputs de número (ocultar flechas) */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        .tab-button {
+            border-bottom-width: 4px;
+            border-bottom-color: transparent;
         }
-        input[type=number] {
-            -moz-appearance: textfield;
+        /* Estilos para el modal */
+        .modal {
+            transition: opacity 0.25s ease;
         }
-        /* Estilos para Pestañas de Login */
-        .tab-btn {
-            @apply w-1/2 py-3 px-4 text-center font-medium border-b-4 cursor-pointer transition-colors duration-200;
-        }
-        .tab-btn-active {
-            @apply border-blue-600 text-blue-600;
-        }
-        .tab-btn-inactive {
-            @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
+        .modal-content {
+            transition: transform 0.25s ease;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-    <!-- Contenedor de Login (MODIFICADO) -->
-    <div id="login-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md mx-auto">
-        <h1 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
-            Acceso al Sistema
-        </h1>
+    <div class="w-full max-w-4xl bg-white rounded-xl shadow-2xl p-8 m-4">
+
+        <!-- Contenedor Principal (Login o App) -->
+        <div id="app-container">
+
+            <!-- 1. Pantalla de Acceso (Login) -->
+            <div id="login-screen">
+                <h1 class="text-4xl font-bold text-center text-blue-600 mb-8">Programador de Actividades</h1>
+                
+                <!-- Pestañas de Supervisor / Auxiliar -->
+                <div class="flex border-b mb-6">
+                    <button id="tab-supervisor" class="tab-button active text-lg font-semibold py-3 px-6 focus:outline-none" onclick="switchTab('supervisor')">
+                        Soy Supervisor
+                    </button>
+                    <button id="tab-auxiliar" class="tab-button text-lg font-semibold py-3 px-6 text-gray-600 focus:outline-none" onclick="switchTab('auxiliar')">
+                        Soy Auxiliar
+                    </button>
+                </div>
+
+                <!-- Contenido de Pestañas -->
+                <div>
+                    <!-- Pestaña Supervisor -->
+                    <div id="supervisor-login-content">
+                        <p class="text-gray-600 mb-6 text-center">Inicia sesión para programar los horarios de tus auxiliares.</p>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="supervisor-id" class="block text-sm font-medium text-gray-700 mb-1">Número de Supervisor (6 dígitos)</label>
+                                <input type="text" id="supervisor-id" maxlength="6" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: 123456">
+                            </div>
+                            <div>
+                                <label for="supervisor-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                                <input type="password" id="supervisor-password" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="••••••••">
+                            </div>
+                            <button id="login-button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition duration-300">
+                                Acceder
+                            </button>
+                            <p id="login-error" class="text-red-500 text-sm text-center hidden"></p>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña Auxiliar -->
+                    <div id="auxiliar-login-content" class="hidden">
+                        <p class="text-gray-600 mb-6 text-center">Ingresa tus datos para consultar tu horario.</p>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="auxiliar-id-consulta" class="block text-sm font-medium text-gray-700 mb-1">Número de Auxiliar (6 dígitos)</label>
+                                <input type="text" id="auxiliar-id-consulta" maxlength="6" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: 654321">
+                            </div>
+                            <div>
+                                <label for="consulta-date" class="block text-sm font-medium text-gray-700 mb-1">Selecciona la Fecha</label>
+                                <input type="date" id="consulta-date" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button id="check-schedule-button" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition duration-300">
+                                Consultar Horario
+                            </button>
+                        </div>
+                         <!-- Contenedor para mostrar el horario del auxiliar -->
+                        <div id="auxiliar-schedule-display" class="hidden mt-8">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Tu Horario Asignado</h3>
+                            <p id="auxiliar-display-error" class="text-red-500 text-center mb-4 hidden"></p>
+                            <div id="auxiliar-schedule-list" class="space-y-2 max-h-60 overflow-y-auto bg-gray-50 p-4 rounded-lg border">
+                                <!-- El horario se inyectará aquí -->
+                            </div>
+                            <button id="close-schedule-button" class="w-full mt-6 bg-gray-500 text-white py-2 rounded-lg font-semibold shadow-lg hover:bg-gray-600 transition duration-300">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Aplicación Principal (Supervisor - Oculta por defecto) -->
+            <div id="main-app" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800">Panel de Supervisor</h2>
+                        <p class="text-gray-600">Supervisor: <span id="logged-supervisor-id" class="font-semibold"></span></p>
+                    </div>
+                    <button id="logout-button" class="bg-red-500 text-white py-2 px-5 rounded-lg font-semibold shadow-lg hover:bg-red-600 transition duration-300">
+                        Cerrar Sesión
+                    </button>
+                </div>
+
+                <!-- Sección de Carga de Datos -->
+                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="programming-date" class="block text-sm font-medium text-gray-700 mb-1">Fecha a Programar</label>
+                            <input type="date" id="programming-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="auxiliar-id" class="block text-sm font-medium text-gray-700 mb-1">Número de Auxiliar (6 dígitos)</label>
+                            <input type="text" id="auxiliar-id" maxlength="6" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: 654321">
+                        </div>
+                        
+                        <div class="self-end">
+                            <button id="load-schedule-button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition duration-300">
+                                Cargar Horario
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cuadrícula de Horarios (Oculta hasta cargar) -->
+                <div id="schedule-grid" class="hidden mt-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Programación de Pasillos</h3>
+                    <p id="schedule-error" class="text-red-500 text-sm mb-4 hidden"></p>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">Hora</th>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">Pasillo (1-70)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedule-body">
+                                <!-- Las filas del horario se generarán con JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-8 flex flex-col md:flex-row gap-4">
+                        <button id="save-schedule-button" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition duration-300">
+                            Guardar Horario
+                        </button>
+                        <button id="export-csv-button" class="flex-1 bg-gray-700 text-white py-3 rounded-lg font-semibold shadow-lg hover:bg-gray-800 transition duration-300">
+                            Exportar a CSV (para Google Sheets)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Mensaje de Carga -->
+        <div id="loading-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 modal">
+            <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+                <p class="text-lg font-semibold text-gray-700">Cargando...</p>
+            </div>
+        </div>
         
-        <!-- (NUEVO) Pestañas de Roles -->
-        <div class="flex mb-5 border-b border-gray-200">
-            <button id="supervisor-tab-btn" class="tab-btn tab-btn-active">
-                Supervisor
-            </button>
-            <button id="assistant-tab-btn" class="tab-btn tab-btn-inactive">
-                Auxiliar
-            </button>
-        </div>
-
-        <!-- (NUEVO) Formulario de Supervisor -->
-        <div id="supervisor-login-form">
-            <div class="mb-4">
-                <label for="login-supervisor-id" class="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Supervisor (6 dígitos)
-                </label>
-                <input type="number" id="login-supervisor-id" placeholder="Ej: 987654" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            </div>
-            
-            <div class="mb-6">
-                <label for="login-password" class="block text-sm font-medium text-gray-700 mb-2">
-                    Contraseña
-                </label>
-                <input type="password" id="login-password" placeholder="••••••••" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            </div>
-
-            <button id="login-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">
-                Entrar
-            </button>
-        </div>
-
-        <!-- (NUEVO) Formulario de Auxiliar -->
-        <div id="assistant-login-form" class="hidden">
-            <div class="mb-4">
-                <label for="login-assistant-id" class="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Auxiliar (6 dígitos)
-                </label>
-                <input type="number" id="login-assistant-id" placeholder="Ej: 123456" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            </div>
-            
-            <button id="assistant-login-btn" class="w-full bg-green-600 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200">
-                Consultar Horario
-            </button>
-        </div>
-
-        <div id="login-message-area" class="text-center mt-4 text-sm font-medium text-red-600"></div>
-    </div>
-
-    <!-- Contenedor del Programador (Supervisor) -->
-    <div id="scheduler-container" class="hidden bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl mx-auto">
-        
-        <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-3 sm:gap-0">
-            <h1 class="text-2xl sm:text-3xl font-bold text-center text-gray-800">
-                Programador de Actividades
-            </h1>
-            <div class="text-center sm:text-right">
-                <span id="supervisor-display" class="text-sm font-medium text-gray-700 block"></span>
-                <button id="logout-btn-supervisor" class="text-sm text-red-600 hover:text-red-800 font-medium transition-colors">
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
-
-        <div class="mb-4">
-            <label for="schedule-date" class="block text-sm font-medium text-gray-700 mb-2">
-                Fecha a Programar
-            </label>
-            <input type="date" id="schedule-date" class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-        </div>
-
-        <div class="mb-6">
-            <label for="assistant-id" class="block text-sm font-medium text-gray-700 mb-2">
-                Número de Auxiliar (Empleado a programar)
-            </label>
-            <div class="flex flex-col sm:flex-row gap-3">
-                <input type="number" id="assistant-id" placeholder="Ej: 123456" class="flex-grow w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <button id="load-schedule-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">
-                    Cargar Horario
-                </button>
-            </div>
-        </div>
-
-        <div id="message-area" class="text-center my-4 text-sm font-medium"></div>
-
-        <div id="schedule-grid" class="hidden">
-            <h2 id="schedule-title" class="text-xl font-semibold text-gray-700 mb-5 text-center">
-                Programar Empleado: 
-            </h2>
-
-            <div id="schedule-inputs-container" class="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
-                <!-- Las horas se generarán aquí con JavaScript -->
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-3 mt-6 border-t border-gray-200 pt-6">
-                <button id="save-schedule-btn" class="w-full sm:w-1/2 bg-green-600 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200">
-                    Guardar Horario
-                </button>
-                <button id="export-csv-btn" class="w-full sm:w-1/2 bg-gray-700 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200">
-                    Exportar a CSV (para Google Sheets)
-                </button>
+        <!-- Modal: Confirmar Siguiente Auxiliar -->
+        <div id="confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 modal">
+            <div class="bg-white p-8 rounded-lg shadow-xl text-center w-full max-w-md modal-content transform scale-95">
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Horario Guardado</h3>
+                <p class="text-gray-600 mb-8">¿Deseas capturar el horario de otro auxiliar?</p>
+                <div class="flex justify-center gap-4">
+                    <button id="confirm-yes" class="bg-blue-600 text-white py-2 px-8 rounded-lg font-semibold hover:bg-blue-700 transition duration-300">
+                        Sí
+                    </button>
+                    <button id="confirm-no" class="bg-gray-300 text-gray-800 py-2 px-8 rounded-lg font-semibold hover:bg-gray-400 transition duration-300">
+                        No
+                    </button>
+                </div>
             </div>
         </div>
 
     </div>
 
-    <!-- (NUEVO) Contenedor de Vista de Auxiliar -->
-    <div id="assistant-view-container" class="hidden bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg mx-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
-                Mi Horario
-            </h1>
-            <div class="text-right">
-                <span id="assistant-display" class="text-sm font-medium text-gray-700 block"></span>
-                <button id="logout-btn-assistant" class="text-sm text-red-600 hover:text-red-800 font-medium transition-colors">
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
-
-        <div class="mb-4">
-            <label for="assistant-schedule-date" class="block text-sm font-medium text-gray-700 mb-2">
-                Seleccionar Fecha
-            </label>
-            <input type="date" id="assistant-schedule-date" class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-        </div>
-
-        <button id="fetch-schedule-btn" class="w-full bg-green-600 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 mb-4">
-            Consultar Horario
-        </button>
-
-        <div id="assistant-message-area" class="text-center my-4 text-sm font-medium"></div>
-
-        <div id="assistant-schedule-display" class="space-y-3 mt-6 border-t border-gray-200 pt-6 max-h-[50vh] overflow-y-auto">
-            <!-- El horario del auxiliar se mostrará aquí -->
-        </div>
-    </div>
-
-
-    <!-- Custom Modal (Supervisor) -->
-    <div id="next-assistant-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Horario Guardado</h3>
-            <p class="text-sm text-gray-600 mb-6">¿Desea capturar el horario de otro auxiliar?</p>
-            <div class="flex justify-end gap-3">
-                <button id="modal-no-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">
-                    No
-                </button>
-                <button id="modal-yes-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    Sí, capturar otro
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts de Firebase -->
+    <!-- Firebase SDKs -->
     <script type="module">
-        // Importaciones de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
-            getFirestore, doc, getDoc, setDoc, setLogLevel
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { 
-            getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Variables Globales ---
-        let db, auth, appId, userId, isAuthReady = false;
+        let db;
+        let auth;
         let currentSupervisorId = null;
-        let currentAssistantId = null; // Puede ser el programado O el que consulta
+        let currentAssistantId = null;
         let currentSelectedDate = null;
-        let currentUserRole = 'supervisor'; // (NUEVO)
-        
-        // Configuración del horario
-        const START_HOUR = 7;
-        const END_HOUR = 17;
-        const DB_COLLECTION_NAME = 'employeeSchedules';
-        
-        // --- Referencias del DOM ---
-        // Vistas
-        const loginContainer = document.getElementById('login-container');
-        const schedulerContainer = document.getElementById('scheduler-container');
-        const assistantViewContainer = document.getElementById('assistant-view-container'); // (NUEVO)
+        let appId = ''; // Se llenará con el projectId
+        const DB_COLLECTION_NAME = 'horarios_pasillos'; // Colección principal
 
-        // Login
-        const supervisorTabBtn = document.getElementById('supervisor-tab-btn'); // (NUEVO)
-        const assistantTabBtn = document.getElementById('assistant-tab-btn'); // (NUEVO)
-        const supervisorLoginForm = document.getElementById('supervisor-login-form'); // (NUEVO)
-        const assistantLoginForm = document.getElementById('assistant-login-form'); // (NUEVO)
-        const loginSupervisorId = document.getElementById('login-supervisor-id');
-        const loginPassword = document.getElementById('login-password');
-        const loginAssistantId = document.getElementById('login-assistant-id'); // (NUEVO)
-        const loginBtn = document.getElementById('login-btn');
-        const assistantLoginBtn = document.getElementById('assistant-login-btn'); // (NUEVO)
-        const loginMessageArea = document.getElementById('login-message-area');
-        
-        // Scheduler (Supervisor)
-        const supervisorDisplay = document.getElementById('supervisor-display');
-        const logoutBtnSupervisor = document.getElementById('logout-btn-supervisor');
-        const assistantIdInput = document.getElementById('assistant-id');
-        const loadScheduleBtn = document.getElementById('load-schedule-btn');
-        const messageArea = document.getElementById('message-area');
+        // --- URL de Google Apps Script (Reemplazar si se usa) ---
+        // DEBES REEMPLAZAR ESTA URL por la URL de tu script publicado
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfyc.../exec'; // URL de marcador de posición
+
+        // --- Elementos del DOM ---
+        const loginScreen = document.getElementById('login-screen');
+        const mainApp = document.getElementById('main-app');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const loadScheduleButton = document.getElementById('load-schedule-button');
+        const saveScheduleButton = document.getElementById('save-schedule-button');
+        const exportCsvButton = document.getElementById('export-csv-button');
         const scheduleGrid = document.getElementById('schedule-grid');
-        const scheduleTitle = document.getElementById('schedule-title');
-        const scheduleInputsContainer = document.getElementById('schedule-inputs-container');
-        const saveScheduleBtn = document.getElementById('save-schedule-btn');
-        const exportCsvBtn = document.getElementById('export-csv-btn');
-        const scheduleDateInput = document.getElementById('schedule-date');
-        
-        // Vista de Auxiliar (NUEVO)
-        const assistantDisplay = document.getElementById('assistant-display');
-        const logoutBtnAssistant = document.getElementById('logout-btn-assistant');
-        const assistantScheduleDate = document.getElementById('assistant-schedule-date');
-        const fetchScheduleBtn = document.getElementById('fetch-schedule-btn');
-        const assistantMessageArea = document.getElementById('assistant-message-area');
-        const assistantScheduleDisplay = document.getElementById('assistant-schedule-display');
+        const scheduleBody = document.getElementById('schedule-body');
+        const supervisorIdInput = document.getElementById('supervisor-id');
+        const passwordInput = document.getElementById('supervisor-password');
+        const auxiliarIdInput = document.getElementById('auxiliar-id');
+        const dateInput = document.getElementById('programming-date');
+        const loginError = document.getElementById('login-error');
+        const scheduleError = document.getElementById('schedule-error');
+        const loadingModal = document.getElementById('loading-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmYes = document.getElementById('confirm-yes');
+        const confirmNo = document.getElementById('confirm-no');
+        const loggedSupervisorIdSpan = document.getElementById('logged-supervisor-id');
 
-        // Modal (Supervisor)
-        const nextAssistantModal = document.getElementById('next-assistant-modal');
-        const modalNoBtn = document.getElementById('modal-no-btn');
-        const modalYesBtn = document.getElementById('modal-yes-btn');
+        // Pestañas
+        const tabSupervisor = document.getElementById('tab-supervisor');
+        const tabAuxiliar = document.getElementById('tab-auxiliar');
+        const supervisorLoginContent = document.getElementById('supervisor-login-content');
+        const auxiliarLoginContent = document.getElementById('auxiliar-login-content');
 
-        // --- Funciones Principales ---
+        // Portal Auxiliar
+        const auxiliarIdConsultaInput = document.getElementById('auxiliar-id-consulta');
+        const consultaDateInput = document.getElementById('consulta-date');
+        const checkScheduleButton = document.getElementById('check-schedule-button');
+        const auxiliarScheduleDisplay = document.getElementById('auxiliar-schedule-display');
+        const auxiliarDisplayError = document.getElementById('auxiliar-display-error');
+        const auxiliarScheduleList = document.getElementById('auxiliar-schedule-list');
+        const closeScheduleButton = document.getElementById('close-schedule-button');
 
-        function getTodayDateString() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = (today.getMonth() + 1).toString().padStart(2, '0');
-            const day = today.getDate().toString().padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
+        // --- Lógica de la Aplicación ---
 
-        function showMessage(text, type = 'info') {
-            messageArea.textContent = text;
-            if (type === 'success') {
-                messageArea.className = 'text-center my-4 text-sm font-medium text-green-600';
-            } else if (type === 'error') {
-                messageArea.className = 'text-center my-4 text-sm font-medium text-red-600';
-            } else {
-                messageArea.className = 'text-center my-4 text-sm font-medium text-gray-600';
-            }
-        }
-        
-        // (NUEVO) Mensajes para la vista de auxiliar
-        function showAssistantMessage(text, type = 'info') {
-            assistantMessageArea.textContent = text;
-            if (type === 'success') {
-                assistantMessageArea.className = 'text-center my-4 text-sm font-medium text-green-600';
-            } else if (type === 'error') {
-                assistantMessageArea.className = 'text-center my-4 text-sm font-medium text-red-600';
-            } else {
-                assistantMessageArea.className = 'text-center my-4 text-sm font-medium text-gray-600';
-            }
-        }
-
-        // Valida el ID del Auxiliar (para Supervisor)
-        function getValidAssistantId() {
-            const assistantId = assistantIdInput.value;
+        // Inicialización al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFirebase();
+            setupEventListeners();
             
-            if (!currentSupervisorId) {
-                showMessage("Error: No hay un supervisor activo. Por favor, inicie sesión de nuevo.", 'error');
-                return null;
-            }
+            // Poner la fecha de hoy en los calendarios
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+            consultaDateInput.value = today;
+        });
 
-            if (!/^\d{6}$/.test(assistantId)) {
-                showMessage("El número de AUXILIAR debe ser de 6 dígitos.", 'error');
-                assistantIdInput.focus();
-                scheduleGrid.classList.add('hidden');
-                return null;
-            }
-            return assistantId;
-        }
-
-        function generateScheduleUI() {
-            scheduleInputsContainer.innerHTML = ''; // Limpiar
-            for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
-                const hourLabel = `${hour.toString().padStart(2, '0')}:00 - ${(hour + 1).toString().padStart(2, '0')}:00`;
-                
-                const row = document.createElement('div');
-                row.className = 'grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_100px] gap-3 items-center';
-
-                const label = document.createElement('label');
-                label.htmlFor = `hour-${hour}`;
-                label.textContent = hourLabel;
-                label.className = 'font-medium text-gray-600 text-sm sm:text-base';
-                
-                const input = document.createElement('input');
-                input.type = 'number';
-                input.id = `hour-${hour}`;
-                input.dataset.hour = hour;
-                input.min = 1;
-                input.max = 70;
-                input.placeholder = "Pasillo";
-                input.className = 'w-full px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500';
-                
-                row.appendChild(label);
-                row.appendChild(input);
-                scheduleInputsContainer.appendChild(row);
-            }
-        }
-
-        // --- Lógica del Supervisor ---
-
-        async function loadSchedule() {
-            const assistantId = getValidAssistantId();
-            if (!assistantId) return;
-
-            const selectedDate = scheduleDateInput.value;
-            if (!selectedDate) {
-                showMessage("Por favor, seleccione una fecha.", 'error');
-                return;
-            }
-
-            // Guardar los IDs y fecha válidos
-            currentAssistantId = assistantId; // Auxiliar a programar
-            currentSelectedDate = selectedDate;
-
-            if (!isAuthReady || !db) {
-                showMessage("Conectando a la base de datos... por favor intente de nuevo.", 'error');
-                return;
-            }
-            
-            showMessage("Cargando horario...", 'info');
-            
-            try {
-                const documentId = `${currentAssistantId}_${currentSelectedDate}`;
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', DB_COLLECTION_NAME, documentId);
-                const docSnap = await getDoc(docRef);
-
-                const scheduleData = docSnap.exists() ? docSnap.data().schedule : {};
-
-                // Poblar los inputs
-                for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
-                    const input = document.getElementById(`hour-${hour}`);
-                    if (input) {
-                        input.value = scheduleData[hour] || '';
-                    }
-                }
-                
-                scheduleTitle.textContent = `Programar Auxiliar: ${currentAssistantId} (Fecha: ${currentSelectedDate})`;
-                scheduleGrid.classList.remove('hidden');
-                showMessage("Horario cargado. Puede editar y guardar.", 'success');
-
-            } catch (error) {
-                console.error("Error al cargar datos: ", error);
-                showMessage("Error al cargar el horario. Revise la consola.", 'error');
-            }
-        }
-        
-        async function saveSchedule() {
-            if (!currentSupervisorId || !currentAssistantId || !currentSelectedDate) {
-                 showMessage("Error: No se ha cargado ningún auxiliar o fecha. Cargue uno primero.", 'error');
-                 return;
-            }
-
-            if (!isAuthReady || !db) {
-                showMessage("Error de conexión. No se puede guardar.", 'error');
-                return;
-            }
-
-            showMessage("Guardando...", 'info');
-
-            const scheduleData = {};
-            for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
-                const input = document.getElementById(`hour-${hour}`);
-                const valueStr = input.value;
-                
-                if (valueStr) {
-                    const aisle = parseInt(valueStr, 10);
-                    if (!isNaN(aisle) && aisle >= 1 && aisle <= 70) {
-                        scheduleData[hour] = aisle;
-                    } else if (aisle > 70 || aisle < 1) {
-                        showMessage(`Error: El pasillo para las ${hour}:00 debe estar entre 1 y 70.`, 'error');
-                        input.focus();
-                        return;
-                    } else {
-                        scheduleData[hour] = null;
-                    }
-                } else {
-                    scheduleData[hour] = null;
-                }
-            }
-
-            try {
-                const documentId = `${currentAssistantId}_${currentSelectedDate}`;
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', DB_COLLECTION_NAME, documentId);
-                await setDoc(docRef, { 
-                    schedule: scheduleData,
-                    lastUpdated: new Date().toISOString(),
-                    lastUpdatedBy: currentSupervisorId
-                });
-                
-                // --- Enviar datos a Google Apps Script ---
-                try {
-                    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTKppwPZjkTDeCwVYTtk5OUd8VNeo2wh5GyWeGK6ANLtXnKOfK-4GNDjsIMR7CjI9i/exec'; 
-
-                    const dataToPost = {
-                        date: currentSelectedDate,
-                        supervisorId: currentSupervisorId,
-                        assistantId: currentAssistantId,
-                        schedule: scheduleData
-                    };
-
-                    const response = await fetch(APPS_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        cache: 'no-cache',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataToPost)
-                    });
-                    
-                    console.log("Datos enviados a Google Apps Script.");
-                } catch (e) {
-                    console.warn("Error al enviar datos a Google Apps Script:", e);
-                }
-                // --- Fin de la sección de Apps Script ---
-
-                nextAssistantModal.classList.remove('hidden');
-
-            } catch (error) {
-                console.error("Error al guardar datos: ", error);
-                showMessage("Error al guardar el horario. Revise la consola.", 'error');
-            }
-        }
-
-        function exportToCSV() {
-            if (!currentAssistantId || !currentSelectedDate) {
-                showMessage("Cargue un auxiliar y seleccione una fecha primero para exportar.", 'error');
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Fecha,Empleado,Hora,Pasillo\n";
-
-            for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
-                const hourLabel = `${hour.toString().padStart(2, '0')}:00 - ${(hour + 1).toString().padStart(2, '0')}:00`;
-                const input = document.getElementById(`hour-${hour}`);
-                const aisle = input.value || 'N/A';
-                
-                csvContent += `"${currentSelectedDate}","${currentAssistantId}","${hourLabel}","${aisle}"\n`;
-            }
-            
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `horario_auxiliar_${currentAssistantId}_${currentSelectedDate}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showMessage("Exportación CSV generada.", 'info');
-        }
-
-        // --- Lógica del Auxiliar (NUEVA) ---
-
-        async function fetchAssistantSchedule() {
-            // El ID del auxiliar ya está en currentAssistantId desde el login
-            const selectedDate = assistantScheduleDate.value;
-            if (!selectedDate) {
-                showAssistantMessage("Por favor, seleccione una fecha.", 'error');
-                return;
-            }
-
-            if (!isAuthReady || !db) {
-                showAssistantMessage("Conectando a la base de datos... por favor intente de nuevo.", 'error');
-                return;
-            }
-
-            showAssistantMessage("Buscando horario...", 'info');
-            assistantScheduleDisplay.innerHTML = ''; // Limpiar resultados
-
-            try {
-                const documentId = `${currentAssistantId}_${selectedDate}`;
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', DB_COLLECTION_NAME, documentId);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const scheduleData = docSnap.data().schedule;
-                    let entriesFound = 0;
-
-                    const title = document.createElement('h3');
-                    title.className = "text-lg font-semibold text-gray-800 mb-3";
-                    title.textContent = `Horario para el día: ${selectedDate}`;
-                    assistantScheduleDisplay.appendChild(title);
-
-                    for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
-                        const aisle = scheduleData[hour];
-                        if (aisle) {
-                            const hourLabel = `${hour.toString().padStart(2, '0')}:00 - ${(hour + 1).toString().padStart(2, '0')}:00`;
-                            const p = document.createElement('p');
-                            p.className = "text-gray-700 bg-gray-50 p-3 rounded-md";
-                            p.innerHTML = `<strong class="text-gray-900">${hourLabel}:</strong> Pasillo ${aisle}`;
-                            assistantScheduleDisplay.appendChild(p);
-                            entriesFound++;
-                        }
-                    }
-
-                    if (entriesFound === 0) {
-                        showAssistantMessage("No hay pasillos asignados para este día.", 'info');
-                    } else {
-                        showAssistantMessage(`Horario cargado. Tienes ${entriesFound} asignaciones.`, 'success');
-                    }
-                } else {
-                    showAssistantMessage("No se encontró ningún horario programado para este día.", 'info');
-                    assistantScheduleDisplay.innerHTML = '';
-                }
-            } catch (error) {
-                console.error("Error al cargar horario de auxiliar: ", error);
-                showAssistantMessage("Error al consultar el horario. Revise la consola.", 'error');
-            }
-        }
-
-
-        // --- Configuración General y Autenticación ---
-
+        // Configuración de Firebase
         async function setupFirebase() {
             try {
-                const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-                const firebaseConfig = JSON.parse(firebaseConfigStr);
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                // (MODIFICADO) Esta es TU configuración de Firebase
+                const firebaseConfig = {
+                  apiKey: "AIzaSyC3A44BaLMfF8xP5ki-O0-q3Z8-AT48Hvg",
+                  authDomain: "programacion-de-pickeo.firebaseapp.com",
+                  projectId: "programacion-de-pickeo",
+                  storageBucket: "programacion-de-pickeo.firebasestorage.app",
+                  messagingSenderId: "1097146717859",
+                  appId: "1:1097146717859:web:3d3a7b4c6ca07305d2d116",
+                  measurementId: "G-00Y59M177B"
+                };
+
+                // (MODIFICADO) El AppId ahora es tu projectId
+                appId = firebaseConfig.projectId;
 
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                
-                setLogLevel('Debug');
+                setLogLevel('Debug'); // Para ver logs en la consola
 
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        console.log("Usuario autenticado:", user.uid);
-                        userId = user.uid;
-                        isAuthReady = true;
-                    } else {
-                        console.log("Usuario no autenticado.");
-                        isAuthReady = false;
-                    }
-                });
-
-                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                if (token) {
-                    await signInWithCustomToken(auth, token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // (MODIFICADO) Autenticación simplificada para GitHub
+                // Iniciamos sesión anónimamente de inmediato
+                await signInAnonymously(auth);
 
             } catch (error) {
                 console.error("Error al inicializar Firebase:", error);
-                loginMessageArea.textContent = "Error al conectar con la base de datos.";
+                loginError.textContent = 'Error al conectar con la base de datos.';
+                loginError.classList.remove('hidden');
             }
         }
-        
-        // (MODIFICADO) Lógica de Autenticación
-        
-        function handleSupervisorLogin() {
-            const id = loginSupervisorId.value;
-            const pass = loginPassword.value;
 
-            if (!/^\d{6}$/.test(id)) {
-                loginMessageArea.textContent = "El número de supervisor debe ser de 6 dígitos.";
-                return;
-            }
+        // Manejadores de eventos
+        function setupEventListeners() {
+            loginButton.addEventListener('click', handleLogin);
+            logoutButton.addEventListener('click', handleLogout);
+            loadScheduleButton.addEventListener('click', loadSchedule);
+            saveScheduleButton.addEventListener('click', saveSchedule);
+            exportCsvButton.addEventListener('click', exportToCSV);
 
-            const DEMO_PASSWORD = "admin123";
+            // Modales
+            confirmYes.addEventListener('click', handleConfirmYes);
+            confirmNo.addEventListener('click', handleConfirmNo);
 
-            if (pass === DEMO_PASSWORD) {
-                currentSupervisorId = id;
-                supervisorDisplay.textContent = `Supervisor: ${id}`;
+            // Pestañas
+            tabSupervisor.addEventListener('click', () => switchTab('supervisor'));
+            tabAuxiliar.addEventListener('click', () => switchTab('auxiliar'));
+
+            // Portal Auxiliar
+            checkScheduleButton.addEventListener('click', fetchAssistantSchedule);
+            closeScheduleButton.addEventListener('click', () => {
+                auxiliarScheduleDisplay.classList.add('hidden');
+                auxiliarIdConsultaInput.value = '';
+            });
+
+            // Permitir "Enter" en los campos de login
+            supervisorIdInput.addEventListener('keypress', (e) => e.key === 'Enter' && passwordInput.focus());
+            passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
+            auxiliarIdInput.addEventListener('keypress', (e) => e.key === 'Enter' && loadSchedule());
+        }
+
+        // --- Lógica de Pestañas ---
+        function switchTab(tabName) {
+            if (tabName === 'supervisor') {
+                tabSupervisor.classList.add('active', 'text-blue-600');
+                tabSupervisor.classList.remove('text-gray-600');
+                tabAuxiliar.classList.remove('active', 'text-blue-600');
+                tabAuxiliar.classList.add('text-gray-600');
                 
-                loginContainer.classList.add('hidden');
-                schedulerContainer.classList.remove('hidden');
-                
-                loginMessageArea.textContent = "";
-                loginPassword.value = "";
-                
+                supervisorLoginContent.classList.remove('hidden');
+                auxiliarLoginContent.classList.add('hidden');
+                auxiliarScheduleDisplay.classList.add('hidden'); // Ocultar resultados
             } else {
-                loginMessageArea.textContent = "Contraseña incorrecta.";
+                tabAuxiliar.classList.add('active', 'text-blue-600');
+                tabAuxiliar.classList.remove('text-gray-600');
+                tabSupervisor.classList.remove('active', 'text-blue-600');
+                tabSupervisor.classList.add('text-gray-600');
+
+                auxiliarLoginContent.classList.remove('hidden');
+                supervisorLoginContent.classList.add('hidden');
             }
+            loginError.classList.add('hidden');
         }
 
-        // (NUEVO) Login para Auxiliar
-        function handleAssistantLogin() {
-            const id = loginAssistantId.value;
-            if (!/^\d{6}$/.test(id)) {
-                loginMessageArea.textContent = "El número de auxiliar debe ser de 6 dígitos.";
+        // --- Lógica de Autenticación y UI ---
+        function handleLogin() {
+            const supervisorId = supervisorIdInput.value;
+            const password = passwordInput.value;
+
+            if (!validateInput(supervisorId, 6)) {
+                loginError.textContent = 'El número de supervisor debe tener 6 dígitos.';
+                loginError.classList.remove('hidden');
                 return;
             }
-
-            // Aquí podríamos validar si el auxiliar existe, 
-            // pero por simplicidad, solo le damos acceso a la vista.
-            currentAssistantId = id;
-            assistantDisplay.textContent = `Auxiliar: ${id}`;
-
-            loginContainer.classList.add('hidden');
-            assistantViewContainer.classList.remove('hidden');
-
-            loginMessageArea.textContent = "";
-            loginAssistantId.value = "";
+            
+            // Contraseña de demostración (en una app real, esto se valida en servidor)
+            if (password === 'admin123') {
+                currentSupervisorId = supervisorId;
+                loggedSupervisorIdSpan.textContent = currentSupervisorId;
+                
+                loginScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                loginError.classList.add('hidden');
+                passwordInput.value = ''; // Limpiar contraseña
+            } else {
+                loginError.textContent = 'Contraseña o ID incorrectos.';
+                loginError.classList.remove('hidden');
+            }
         }
 
         function handleLogout() {
             currentSupervisorId = null;
             currentAssistantId = null;
             currentSelectedDate = null;
-            currentUserRole = 'supervisor'; // Resetear al rol por defecto
-
-            // Ocultar todas las vistas de contenido
-            schedulerContainer.classList.add('hidden');
-            assistantViewContainer.classList.add('hidden'); // (NUEVO)
+            
+            mainApp.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
             scheduleGrid.classList.add('hidden');
-            
-            // Limpiar formularios y mensajes
-            showMessage('', 'info');
-            showAssistantMessage('', 'info'); // (NUEVO)
-            assistantIdInput.value = '';
-            assistantScheduleDisplay.innerHTML = ''; // (NUEVO)
-
-            // Resetear fechas a hoy
-            scheduleDateInput.value = getTodayDateString();
-            assistantScheduleDate.value = getTodayDateString(); // (NUEVO)
-
-            // Mostrar el contenedor de login
-            loginContainer.classList.remove('hidden');
-            loginSupervisorId.value = '';
-            loginAssistantId.value = ''; // (NUEVO)
-            loginPassword.value = '';
-            
-            // (NUEVO) Resetear pestañas de login
-            supervisorTabBtn.click();
+            auxiliarIdInput.value = '';
+            supervisorIdInput.value = '';
+            // Volver a la pestaña de supervisor por defecto
+            switchTab('supervisor');
         }
-        
-        // (NUEVO) Cambiar pestañas de Login
-        function switchLoginTab(role) {
-            currentUserRole = role;
-            loginMessageArea.textContent = '';
-            
-            if (role === 'supervisor') {
-                supervisorTabBtn.classList.add('tab-btn-active');
-                supervisorTabBtn.classList.remove('tab-btn-inactive');
-                assistantTabBtn.classList.add('tab-btn-inactive');
-                assistantTabBtn.classList.remove('tab-btn-active');
-                
-                supervisorLoginForm.classList.remove('hidden');
-                assistantLoginForm.classList.add('hidden');
-            } else {
-                assistantTabBtn.classList.add('tab-btn-active');
-                assistantTabBtn.classList.remove('tab-btn-inactive');
-                supervisorTabBtn.classList.add('tab-btn-inactive');
-                supervisorTabBtn.classList.remove('tab-btn-active');
 
-                assistantLoginForm.classList.remove('hidden');
-                supervisorLoginForm.classList.add('hidden');
+        // --- Lógica Principal (Supervisor) ---
+
+        function generateScheduleRows() {
+            scheduleBody.innerHTML = ''; // Limpiar tabla
+            for (let hour = 7; hour <= 17; hour++) {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                
+                const timeDisplay = `${hour}:00 - ${hour + 1}:00`;
+                
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-sm text-gray-700 font-medium">${timeDisplay}</td>
+                    <td class="py-2 px-4">
+                        <input type="number" 
+                               data-hour="${hour}" 
+                               min="1" 
+                               max="70" 
+                               class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 schedule-input">
+                    </td>
+                `;
+                scheduleBody.appendChild(tr);
             }
         }
 
-        // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', () => {
-            setupFirebase();
-            generateScheduleUI();
+        async function loadSchedule() {
+            const assistantId = auxiliarIdInput.value;
+            const selectedDate = dateInput.value;
             
-            // Poner la fecha de hoy por defecto en ambos selectores
-            scheduleDateInput.value = getTodayDateString();
-            assistantScheduleDate.value = getTodayDateString(); // (NUEVO)
+            if (!validateInput(assistantId, 6)) {
+                scheduleError.textContent = 'El número de auxiliar debe tener 6 dígitos.';
+                scheduleError.classList.remove('hidden');
+                return;
+            }
+            if (!selectedDate) {
+                scheduleError.textContent = 'Por favor, selecciona una fecha.';
+                scheduleError.classList.remove('hidden');
+                return;
+            }
 
-            // (NUEVO) Listeners de pestañas de Login
-            supervisorTabBtn.addEventListener('click', () => switchLoginTab('supervisor'));
-            assistantTabBtn.addEventListener('click', () => switchLoginTab('assistant'));
+            currentAssistantId = assistantId;
+            currentSelectedDate = selectedDate;
+            scheduleError.classList.add('hidden');
+            showLoading(true);
+            
+            generateScheduleRows(); // Generar filas primero
 
-            // Listener para cambio de fecha (Supervisor)
-            scheduleDateInput.addEventListener('change', () => {
-                const newDate = scheduleDateInput.value;
-                if (newDate !== currentSelectedDate) {
-                    currentSelectedDate = newDate;
-                    if (!scheduleGrid.classList.contains('hidden')) {
-                        scheduleGrid.classList.add('hidden');
-                        showMessage("Fecha cambiada. Vuelva a cargar el horario del auxiliar para este día.", 'info');
-                        currentAssistantId = null;
-                        assistantIdInput.value = '';
-                        assistantIdInput.focus();
+            try {
+                const documentId = `${currentAssistantId}_${currentSelectedDate}`;
+                // (MODIFICADO) Ruta de base de datos simplificada
+                const docRef = doc(db, DB_COLLECTION_NAME, documentId);
+                const docSnap = await getDoc(docRef);
+
+                const scheduleData = docSnap.exists() ? docSnap.data().schedule : {};
+                
+                // Llenar los inputs con los datos cargados
+                document.querySelectorAll('.schedule-input').forEach(input => {
+                    const hour = input.dataset.hour;
+                    if (scheduleData[hour]) {
+                        input.value = scheduleData[hour];
                     }
+                });
+
+                scheduleGrid.classList.remove('hidden');
+            } catch (error) {
+                console.error("Error al cargar el horario: ", error);
+                scheduleError.textContent = 'Error al conectar con la base de datos para cargar.';
+                scheduleError.classList.remove('hidden');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function saveSchedule() {
+            if (!currentAssistantId || !currentSelectedDate) {
+                scheduleError.textContent = 'Primero debes cargar el horario de un auxiliar.';
+                scheduleError.classList.remove('hidden');
+                return;
+            }
+
+            showLoading(true);
+            scheduleError.classList.add('hidden');
+            
+            const scheduleData = {};
+            const inputs = document.querySelectorAll('.schedule-input');
+            let hasErrors = false;
+            
+            // Validar y recolectar datos
+            inputs.forEach(input => {
+                const hour = input.dataset.hour;
+                const pasillo = input.value.trim();
+                
+                if (pasillo) { // Solo guardar si hay un valor
+                    const pasilloNum = parseInt(pasillo, 10);
+                    if (pasilloNum < 1 || pasilloNum > 70) {
+                        input.classList.add('border-red-500'); // Marcar error
+                        hasErrors = true;
+                    } else {
+                        input.classList.remove('border-red-500');
+                        scheduleData[hour] = pasilloNum;
+                    }
+                } else {
+                    input.classList.remove('border-red-500'); // Limpiar error si está vacío
                 }
             });
 
-            // Listeners del Programador (Supervisor)
-            loadScheduleBtn.addEventListener('click', loadSchedule);
-            saveScheduleBtn.addEventListener('click', saveSchedule);
-            exportCsvBtn.addEventListener('click', exportToCSV);
+            if (hasErrors) {
+                scheduleError.textContent = 'Error: Los pasillos deben ser números entre 1 y 70.';
+                scheduleError.classList.remove('hidden');
+                showLoading(false);
+                return;
+            }
 
-            // Listeners de Login/Logout
-            loginBtn.addEventListener('click', handleSupervisorLogin); // (MODIFICADO)
-            assistantLoginBtn.addEventListener('click', handleAssistantLogin); // (NUEVO)
-            logoutBtnSupervisor.addEventListener('click', handleLogout);
-            logoutBtnAssistant.addEventListener('click', handleLogout); // (NUEVO)
-            
-            // (NUEVO) Listener para vista de Auxiliar
-            fetchScheduleBtn.addEventListener('click', fetchAssistantSchedule);
+            try {
+                // 1. Guardar en Firestore
+                const documentId = `${currentAssistantId}_${currentSelectedDate}`;
+                // (MODIFICADO) Ruta de base de datos simplificada
+                const docRef = doc(db, DB_COLLECTION_NAME, documentId);
+                await setDoc(docRef, { 
+                    schedule: scheduleData,
+                    lastUpdated: new Date().toISOString(),
+                    lastUpdatedBy: currentSupervisorId,
+                    date: currentSelectedDate,
+                    assistantId: currentAssistantId
+                });
 
-            // Listeners para modal (Supervisor)
-            modalNoBtn.addEventListener('click', () => {
-                nextAssistantModal.classList.add('hidden');
-                handleLogout();
+                // 2. Enviar a Google Sheets (si está configurado)
+                sendToGoogleSheet(scheduleData);
+
+                showLoading(false);
+                showConfirmModal(true); // Mostrar modal de confirmación
+
+            } catch (error) {
+                console.error("Error al guardar el horario: ", error);
+                scheduleError.textContent = 'Error al conectar con la base de datos para guardar.';
+                scheduleError.classList.remove('hidden');
+                showLoading(false);
+            }
+        }
+
+        // --- Lógica Portal Auxiliar ---
+        async function fetchAssistantSchedule() {
+            const assistantId = auxiliarIdConsultaInput.value;
+            const selectedDate = consultaDateInput.value;
+
+            if (!validateInput(assistantId, 6)) {
+                showAuxiliarError('El número de auxiliar debe tener 6 dígitos.');
+                return;
+            }
+            if (!selectedDate) {
+                showAuxiliarError('Por favor, selecciona una fecha.');
+                return;
+            }
+
+            showLoading(true);
+            auxiliarScheduleList.innerHTML = '';
+            auxiliarDisplayError.classList.add('hidden');
+
+            try {
+                const documentId = `${assistantId}_${selectedDate}`;
+                // (MODIFICADO) Ruta de base de datos simplificada
+                const docRef = doc(db, DB_COLLECTION_NAME, documentId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const scheduleData = docSnap.data().schedule;
+                    const hours = Object.keys(scheduleData).sort((a, b) => a - b);
+
+                    if (hours.length === 0) {
+                        showAuxiliarError('No tienes pasillos asignados para este día.');
+                    } else {
+                        hours.forEach(hour => {
+                            const pasillo = scheduleData[hour];
+                            const li = document.createElement('li');
+                            li.className = 'p-2 bg-white rounded-md border border-gray-200';
+                            li.innerHTML = `
+                                <span class="font-semibold text-blue-600">${hour}:00 - ${parseInt(hour,10) + 1}:00</span>
+                                <span class="text-gray-800"> &rarr; Pasillo: ${pasillo}</span>
+                            `;
+                            auxiliarScheduleList.appendChild(li);
+                        });
+                        auxiliarScheduleDisplay.classList.remove('hidden');
+                    }
+                } else {
+                    showAuxiliarError('No se encontró ningún horario programado para ti en esta fecha.');
+                }
+            } catch (error) {
+                console.error("Error al consultar horario: ", error);
+                showAuxiliarError('Error al conectar con la base de datos.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showAuxiliarError(message) {
+            auxiliarScheduleDisplay.classList.remove('hidden');
+            auxiliarDisplayError.textContent = message;
+            auxiliarDisplayError.classList.remove('hidden');
+            auxiliarScheduleList.innerHTML = ''; // Limpiar lista si hay error
+        }
+
+        // --- Funciones de Utilidad ---
+
+        function validateInput(id, length) {
+            return id.length === length && /^\d+$/.test(id);
+        }
+
+        function showLoading(isLoading) {
+            if (isLoading) {
+                loadingModal.classList.remove('hidden');
+                setTimeout(() => loadingModal.classList.add('opacity-100'), 10);
+            } else {
+                loadingModal.classList.remove('opacity-100');
+                setTimeout(() => loadingModal.classList.add('hidden'), 250);
+            }
+        }
+
+        function showConfirmModal(show) {
+             if (show) {
+                confirmModal.classList.remove('hidden');
+                setTimeout(() => {
+                    confirmModal.classList.add('opacity-100');
+                    confirmModal.querySelector('.modal-content').classList.add('scale-100');
+                }, 10);
+            } else {
+                confirmModal.classList.remove('opacity-100');
+                confirmModal.querySelector('.modal-content').classList.remove('scale-100');
+                setTimeout(() => confirmModal.classList.add('hidden'), 250);
+            }
+        }
+
+        function handleConfirmYes() {
+            showConfirmModal(false);
+            scheduleGrid.classList.add('hidden');
+            auxiliarIdInput.value = '';
+            auxiliarIdInput.focus();
+            currentAssistantId = null;
+        }
+
+        function handleConfirmNo() {
+            showConfirmModal(false);
+            // Regresar al inicio de sesión
+            handleLogout();
+        }
+
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Auxiliar,Fecha,Hora,Pasillo\n";
+            const inputs = document.querySelectorAll('.schedule-input');
+            const assistantId = currentAssistantId || 'NO-ID';
+            const selectedDate = currentSelectedDate || 'NO-FECHA';
+
+            inputs.forEach(input => {
+                const hour = input.dataset.hour;
+                const pasillo = input.value.trim();
+                
+                if (pasillo) {
+                    const timeDisplay = `${hour}:00`;
+                    csvContent += `${assistantId},${selectedDate},${timeDisplay},${pasillo}\n`;
+                }
             });
 
-            modalYesBtn.addEventListener('click', () => {
-                nextAssistantModal.classList.add('hidden');
-                assistantIdInput.value = '';
-                scheduleGrid.classList.add('hidden');
-                showMessage('Ingrese el siguiente número de auxiliar.', 'info');
-                currentAssistantId = null;
-                assistantIdInput.focus();
-            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `horario_${assistantId}_${selectedDate}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
-            // Permitir presionar Enter para login (Supervisor)
-            loginPassword.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleSupervisorLogin();
-            });
-            loginSupervisorId.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') loginPassword.focus();
-            });
-            
-            // (NUEVO) Permitir presionar Enter para login (Auxiliar)
-            loginAssistantId.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleAssistantLogin();
-            });
+        function sendToGoogleSheet(scheduleData) {
+            if (!APPS_SCRIPT_URL.includes('https://script.google.com/')) {
+                console.warn("URL de Google Apps Script no configurada. Saltando envío.");
+                return; // No intentar si la URL es la de marcador de posición
+            }
 
-            // Permitir presionar Enter para cargar (Supervisor)
-            assistantIdInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') loadSchedule();
+            const hours = Object.keys(scheduleData);
+            if (hours.length === 0) return; // No enviar si no hay datos
+
+            // Enviar cada hora como una fila separada
+            hours.forEach(hour => {
+                const pasillo = scheduleData[hour];
+                const timeDisplay = `${hour}:00`;
+                
+                const dataToSend = {
+                    fecha: currentSelectedDate,
+                    supervisor: currentSupervisorId,
+                    auxiliar: currentAssistantId,
+                    hora: timeDisplay,
+                    pasillo: pasillo
+                };
+
+                // Usar fetch para enviar los datos al script
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Importante para evitar errores de CORS con Google Scripts
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSend)
+                })
+                .then(response => {
+                    console.log('Datos enviados a Google Sheet (hora: ' + hour + ')');
+                })
+                .catch(error => {
+                    console.error('Error al enviar a Google Sheet:', error);
+                });
             });
-        });
+        }
     </script>
 </body>
 </html>
